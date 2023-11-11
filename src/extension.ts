@@ -65,7 +65,16 @@ function processFileContents(fileContents: string[], filePaths: string[]): strin
 }
 
 function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionContext) {
-    const nonce = getNonce();
+	const nonce = getNonce();
+
+    // Dark theme specific styles
+    const darkThemeStyles = `
+        body { background: #1e1e1e; color: #c5c5c5; }
+        textarea, #response { background: #252526; color: #CCC; border: 1px solid #3c3c3c; }
+        button { background: #0e639c; color: #FFF; border: 1px solid #007acc; }
+        button:hover { background: #007acc; }
+        #response { border-color: #3c3c3c; }
+    `;
 
     return `<!DOCTYPE html>
     <html lang="en">
@@ -77,8 +86,11 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; }
             textarea, #response { width: 100%; margin-bottom: 10px; }
             textarea { height: 100px; }
-            #response { white-space: pre-wrap; background-color: #f5f5f5; border: solid 1px #ddd; padding: 10px; }
-            button { padding: 5px 15px; }
+            #response { white-space: pre-wrap; padding: 10px; }
+            button { padding: 5px 15px; margin-bottom: 20px; }
+
+            /* Inject dark theme styles */
+            ${darkThemeStyles}
         </style>
     </head>
     <body>
