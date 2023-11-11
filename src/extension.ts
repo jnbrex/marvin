@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 import { FileReader } from './fileReader';
 import { OpenAIClient } from './openaiClient';
+import { writeToFile } from './utils'; // Import `writeToFile` function.
 
 export function activate(context: vscode.ExtensionContext) {
+    // Register a file watcher for all files in the workspace.
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
+    
     const openAIClient = new OpenAIClient(
         vscode.workspace.getConfiguration('marvin').get('openaiApiKey') || '',
         vscode.workspace.getConfiguration('marvin').get('modelName') || 'gpt-4-1106-preview'
@@ -15,22 +19,47 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.ViewColumn.One,
             { enableScripts: true }
         );
+        
+        var processedData = '';
+        // File data processing should be performed here and also whenever files change.
+        async function updateFileData() {
+            const fileReader = new FileReader(vscode.workspace);
+            const fileData = await fileReader.readWorkspaceFiles();
+            const fileContents = fileData.map(file => file.content);
+            const filePaths = fileData.map(file => file.filePath);
+            processedData = processFileContents(fileContents, filePaths);
+        }
 
-        const fileReader = new FileReader(vscode.workspace);
-        const fileData = await fileReader.readWorkspaceFiles();
-        const fileContents = fileData.map(file => file.content);
-        const filePaths = fileData.map(file => file.filePath);
-        const processedData = processFileContents(fileContents, filePaths);
+        // Initially call `updateFileData` to process files for the first time.
+        await updateFileData();
 
         panel.webview.html = getWebviewContent(panel.webview, context);
 
         panel.webview.onDidReceiveMessage(
             async message => {
                 switch (message.command) {
+                    // Handle new command to apply changes to files.
+                    case 'applyChanges':
+                        try {
+                            await applyChangesToFile(message.changes);
+                            panel.webview.postMessage({ command: 'changesApplied' });
+                        } catch (error) {
+                            console.error(`Error applying changes to file: ${error}`);
+                            panel.webview.postMessage({ command: 'error', text: 'Error applying changes to file.' });
+                        }
+                        break;
                     case 'queryOpenAI':
                         try {
                             const response = await queryOpenAI(message.text, processedData, openAIClient);
-                            panel.webview.postMessage({ command: 'response', text: response });
+                            // Check if the response contains actions to modify files.
+                            const changes = parseFileChanges(response);
+                            if (changes) {
+                                // Send file changes back to the webview.
+                                panel.webview.postMessage({ command: 'fileChanges', changes: changes });
+                            } else {
+                                // Send response back to the webview if no file changes.
+                                panel.webview.postMessage({ command: 'response', text: response });
+                            }
                         } catch (error) {
                             console.error(`Error: ${error}`);
                             panel.webview.postMessage({ command: 'error', text: 'Error querying OpenAI.' });
@@ -41,6 +70,14 @@ export function activate(context: vscode.ExtensionContext) {
             undefined,
             context.subscriptions
         );
+
+        // Re-process the file data when any file within the workspace has changed, created or deleted.
+        fileWatcher.onDidChange(updateFileData);
+        fileWatcher.onDidCreate(updateFileData);
+        fileWatcher.onDidDelete(updateFileData);
+
+        // Don't forget to dispose of the file watcher when the extension is deactivated.
+        context.subscriptions.push(fileWatcher);
     });
 
     context.subscriptions.push(guiDisposable);
@@ -194,4 +231,20 @@ async function queryOpenAI(userQuery: string, projectData: string, openAIClient:
 
     const response = await openAIClient.getChatCompletion(messages);
     return response;
+}
+
+async function applyChangesToFile(changes: Array<{ filePath: string; content: string; }>): Promise<void> {
+    for (const change of changes) {
+        await writeToFile(change.filePath, change.content);
+    }
+}
+
+function parseFileChanges(response: string): Array<{ filePath: string; content: string; }> | null {
+    // This function should parse the response from OpenAI and extract
+    // instructions for file modifications, if there are any.
+    // For the purpose of this example, assume we have a function to do this.
+    // Return example - for illustration purposes only, not functional code:
+    return response.includes('change file') ? [
+        { filePath: '/path/to/file', content: 'new file content' }
+    ] : null;
 }

@@ -19,3 +19,7 @@ export async function getFilePaths(dir: string): Promise<string[]> {
     await readDir(dir);
     return files;
 }
+
+export async function writeToFile(filePath: string, data: string): Promise<void> {
+    await fs.writeFile(filePath, data, { encoding: 'utf8' });
+}

@@ -24,40 +24,28 @@ export class OpenAIClient {
                 { headers: { 'Authorization': `Bearer ${this.apiKey}` } }
             );
             const lastMessage = response.data.choices[0].message;
-            return lastMessage.role === 'assistant' ? lastMessage.content : '';
+            // Before returning the last message, check if it contains actions to modify files.
+            if (lastMessage.role === 'assistant') {
+                const changes = false; //extractFileChanges(lastMessage.content);
+                if (changes) {
+                    // If changes are found, add them to the response.
+                    return JSON.stringify({ text: lastMessage.content, changes: changes });
+                } else {
+                    // If no changes, return the message text as it is.
+                    return lastMessage.content;
+                }
+            } else {
+                return '';
+            }
         } catch (error) {
             console.error('Error calling OpenAI Chat API:', error);
             throw error;
         }
     }
 
-    async *getChatStream(messages: { role: string, content: string }[]): AsyncGenerator<string, void, undefined> {
-        const endpoint = `https://api.openai.com/v1/chat/completions`; // same endpoint
-        const payload = {
-            model: this.modelName,
-            messages: messages,
-        };
-
-        // Instead of a single axios post, we will use an axios request with a stream response type
-        try {
-            const response = await axios.request({
-                method: 'post',
-                url: endpoint,
-                data: payload,
-                headers: { 'Authorization': `Bearer ${this.apiKey}` },
-                responseType: 'stream'
-            });
-
-            // The axios response is now a stream
-            const stream = response.data;
-
-            // Use a generator to yield messages as they are received
-            for await (const chunk of Readable.toWeb(stream)) {
-                yield typeof chunk === 'string' ? chunk : chunk.toString();
-            }
-        } catch (error) {
-            console.error('Error calling OpenAI Chat Stream API:', error);
-            throw error;
-        }
+    extractFileChanges(responseText: string): Array<{ filePath: string; content: string; }> | null {
+        // TODO: Implement actual parsing logic to extract file change instructions.
+        // Placeholder return value:
+        return null;
     }
 }
