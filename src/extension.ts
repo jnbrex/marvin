@@ -114,13 +114,14 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
         textarea, #response { background: #252526; color: #CCC; border: 1px solid #3c3c3c; }
         button {
 			padding: 10px 20px;
+            margin-top: 10px;
 			margin-bottom: 10px;
 			border: none;
 			outline: none;
 			cursor: pointer;
 			font-weight: bold;
 			transition: all 0.3s ease;
-			background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+			background-image: linear-gradient(to right, #3da8df 0%, #2080b8 100%);
 			border-radius: 20px;
 			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 			color: white;
@@ -137,6 +138,24 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
 		}
         #response { border-color: #3c3c3c; }
     `;
+
+    // Enhanced title style to match the button styles, with faux-gradient text effect
+    const enhancedTitleStyle = `
+        h1 {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0;
+            margin-bottom: 20px;
+            /* Faux-gradient effect using text-shadows */
+            color: #fff;
+            background: -webkit-linear-gradient(#3da8df, #2080b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            user-select: none;
+        }
+    `;
     
     return `<!DOCTYPE html>
     <html lang="en">
@@ -152,7 +171,7 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
                 margin-bottom: 5px;
                 padding: 10px;
             }
-            textarea { height: 100px; }
+            textarea { height: 100px; resize: none; }
             #response {
                 margin-top: 5px;
                 margin-bottom: 5px;
@@ -162,26 +181,38 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
             }
             button { padding: 5px 15px; margin-bottom: 10px; }
 
+            .button-loading {
+                background-image: linear-gradient(to right, #4facfe, #00f2fe, #4facfe);
+                background-size: 200% 200%; /* make sure the gradient background is large enough so the shift can be seen */
+                animation: gradientShift 2s linear infinite; /* apply the animation, adjust timing as necessary */
+                color: white; /* Keep the button text visible */
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: translate(-50%, -50%) rotate(0deg);
+                }
+                100% {
+                    transform: translate(-50%, -50%) rotate(360deg);
+                }
+            }
+
             /* Inject css styles */
             ${darkThemeStyles}
             ${responsiveStyles}
             ${cssEnhancements}
-			.loader {
-				border: 5px solid #f3f3f3; /* Light grey */
-				border-top: 5px solid #3498db; /* Blue */
-				border-radius: 50%;
-                margin-bottom: 10px;
-                margin-left: 10px;
-				width: 30px;
-				height: 30px;
-				animation: spin 2s linear infinite;
-				display: none; /* Hidden by default */
-			}
+            ${enhancedTitleStyle}
 		
 			@keyframes spin {
 				0% { transform: rotate(0deg); }
 				100% { transform: rotate(360deg); }
 			}
+
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
 
             .flex-container {
                 display: flex; // Use flexbox to position the elements side by side
@@ -190,14 +221,12 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
         </style>
     </head>
     <body>
-        <h1>Marvin Extension GUI</h1>
-        <p>Use this panel to interact with the Marvin extension and ask questions about your project.</p>
+        <h1>Marvin - your coding assistant</h1>
         <textarea id="question" placeholder="Ask a question about the project..."></textarea>
         
         <!-- Flex container for the button and loader -->
         <div class="flex-container">
             <button onclick="askQuestion()" class="ask-btn">Ask</button>
-            <div id="loading" class="loader"></div>
         </div>
         
         <div id="response"></div>
@@ -205,12 +234,20 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
         <script nonce="${nonce}">
             const vscode = acquireVsCodeApi();
 
+            function setButtonLoading(loading) {
+                const askButton = document.querySelector('.ask-btn');
+                if (loading) {
+                    askButton.classList.add('button-loading');
+                } else {
+                    askButton.classList.remove('button-loading');
+                }
+            }
+
             function askQuestion() {
                 const question = document.getElementById('question').value;
                 const responseContainer = document.getElementById('response');
-                responseContainer.style.display = 'none'; // Ensure it's hidden before displaying loading icon
-                document.getElementById('loading').style.display = 'block'; // Show loading icon
-                responseContainer.innerHTML = ''; // Clear the previous response or error
+                responseContainer.style.display = 'none';
+                setButtonLoading(true); // Enable loading state for the button
                 vscode.postMessage({
                     command: 'queryOpenAI',
                     text: question
@@ -223,13 +260,13 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
                 switch (message.command) {
                     case 'response':
                         responseContainer.innerHTML = message.html;
-                        responseContainer.style.display = 'block'; // Now display the response
-                        document.getElementById('loading').style.display = 'none'; // Hide loading icon
+                        responseContainer.style.display = 'block';
+                        setButtonLoading(false); // Disable loading state for the button
                         break;
                     case 'error':
                         responseContainer.textContent = 'Error: ' + message.text;
-                        responseContainer.style.display = 'block'; // Display the error message
-                        document.getElementById('loading').style.display = 'none'; // Hide loading icon
+                        responseContainer.style.display = 'block';
+                        setButtonLoading(false); // Disable loading state for the button
                         break;
                 }
             });
