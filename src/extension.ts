@@ -71,10 +71,33 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
     const darkThemeStyles = `
         body { background: #1e1e1e; color: #c5c5c5; }
         textarea, #response { background: #252526; color: #CCC; border: 1px solid #3c3c3c; }
-        button { background: #0e639c; color: #FFF; border: 1px solid #007acc; }
-        button:hover { background: #007acc; }
+        button {
+			padding: 10px 20px;
+			margin-bottom: 20px;
+			border: none;
+			outline: none;
+			cursor: pointer;
+			font-weight: bold;
+			transition: all 0.3s ease;
+			background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+			border-radius: 20px;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+			color: white;
+		}
+		
+		button:hover {
+			box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+			transform: translateY(-2px);
+		}
+		
+		button:active {
+			transform: translateY(1px);
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		}
         #response { border-color: #3c3c3c; }
     `;
+
+	
 
     return `<!DOCTYPE html>
     <html lang="en">
@@ -91,37 +114,57 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
 
             /* Inject dark theme styles */
             ${darkThemeStyles}
+
+			.loader {
+				border: 5px solid #f3f3f3; /* Light grey */
+				border-top: 5px solid #3498db; /* Blue */
+				border-radius: 50%;
+				width: 30px;
+				height: 30px;
+				animation: spin 2s linear infinite;
+				display: none; /* Hidden by default */
+			}
+		
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
         </style>
     </head>
     <body>
         <h1>Marvin Extension GUI</h1>
         <p>Use this panel to interact with the Marvin extension and ask questions about your project.</p>
         <textarea id="question" placeholder="Ask a question about the project..."></textarea>
-        <button onclick="askQuestion()">Ask</button>
+        <button onclick="askQuestion()" class="ask-btn">Ask</button>
+		<div id="loading" class="loader"></div>
         <div id="response"></div>
 
         <script nonce="${nonce}">
             const vscode = acquireVsCodeApi();
             function askQuestion() {
-                const question = document.getElementById('question').value;
-                vscode.postMessage({
-                    command: 'queryOpenAI',
-                    text: question
-                });
-            }
+				const question = document.getElementById('question').value;
+				document.getElementById('loading').style.display = 'block'; // Show loading icon
+				document.getElementById('response').textContent = ''; // Clear the previous response or error
+				vscode.postMessage({
+					command: 'queryOpenAI',
+					text: question
+				});
+			}
 
             window.addEventListener('message', event => {
-                const message = event.data;
-                switch (message.command) {
-                    case 'response':
-                        const responseContainer = document.getElementById('response');
-                        responseContainer.textContent = message.text;
-                        break;
-                    case 'error':
-                        document.getElementById('response').textContent = 'Error: ' + message.text;
-                        break;
-                }
-            });
+				const message = event.data;
+				switch (message.command) {
+					case 'response':
+						const responseContainer = document.getElementById('response');
+						responseContainer.textContent = message.text;
+						document.getElementById('loading').style.display = 'none'; // Hide loading icon
+						break;
+					case 'error':
+						document.getElementById('response').textContent = 'Error: ' + message.text;
+						document.getElementById('loading').style.display = 'none'; // Hide loading icon
+						break;
+				}
+			});
         </script>
     </body>
     </html>`;
