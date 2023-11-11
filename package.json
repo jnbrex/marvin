@@ -33,12 +33,12 @@
     "commands": [
       {
         "command": "marvin.showGui",
-        "title": "Show Gui"
+        "title": "Load Marvin"
       }
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run build",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",

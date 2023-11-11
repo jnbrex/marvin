@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { FileReader } from './fileReader';
 import { OpenAIClient } from './openaiClient';
-import { writeToFile } from './utils'; // Import `writeToFile` function.
+import marked from 'marked';
 
 export function activate(context: vscode.ExtensionContext) {
     // Register a file watcher for all files in the workspace.
@@ -15,19 +15,24 @@ export function activate(context: vscode.ExtensionContext) {
     let guiDisposable = vscode.commands.registerCommand('marvin.showGui', async () => {
         const panel = vscode.window.createWebviewPanel(
             'marvinGui',
-            'Marvin GUI',
+            'Marvin',
             vscode.ViewColumn.One,
-            { enableScripts: true }
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true,
+                // Only allow the webview to access resources in our extension's media directory
+                // localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'lib')]
+            }
         );
         
-        var processedData = '';
+        var projectData = '';
         // File data processing should be performed here and also whenever files change.
         async function updateFileData() {
             const fileReader = new FileReader(vscode.workspace);
             const fileData = await fileReader.readWorkspaceFiles();
             const fileContents = fileData.map(file => file.content);
             const filePaths = fileData.map(file => file.filePath);
-            processedData = processFileContents(fileContents, filePaths);
+            projectData = processFileContents(fileContents, filePaths);
         }
 
         // Initially call `updateFileData` to process files for the first time.
@@ -38,28 +43,11 @@ export function activate(context: vscode.ExtensionContext) {
         panel.webview.onDidReceiveMessage(
             async message => {
                 switch (message.command) {
-                    // Handle new command to apply changes to files.
-                    case 'applyChanges':
-                        try {
-                            await applyChangesToFile(message.changes);
-                            panel.webview.postMessage({ command: 'changesApplied' });
-                        } catch (error) {
-                            console.error(`Error applying changes to file: ${error}`);
-                            panel.webview.postMessage({ command: 'error', text: 'Error applying changes to file.' });
-                        }
-                        break;
                     case 'queryOpenAI':
                         try {
-                            const response = await queryOpenAI(message.text, processedData, openAIClient);
-                            // Check if the response contains actions to modify files.
-                            const changes = parseFileChanges(response);
-                            if (changes) {
-                                // Send file changes back to the webview.
-                                panel.webview.postMessage({ command: 'fileChanges', changes: changes });
-                            } else {
-                                // Send response back to the webview if no file changes.
-                                panel.webview.postMessage({ command: 'response', text: response });
-                            }
+                            console.log(message.text);
+                            const response = await queryOpenAI(message.text, projectData, openAIClient);
+                            panel.webview.postMessage({ command: 'response', text: response, html: marked.parse(response) });
                         } catch (error) {
                             console.error(`Error: ${error}`);
                             panel.webview.postMessage({ command: 'error', text: 'Error querying OpenAI.' });
@@ -86,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 function processFileContents(fileContents: string[], filePaths: string[]): string {
-    const sourceCodeExtensions = ['.js', '.py', '.java', '.cpp', '.ts', '.html', '.css'];
+    const sourceCodeExtensions = ['.py', '.java', '.cpp', '.ts', '.html', '.css'];
     let concatenatedSourceCode = '';
 
     fileContents.forEach((content, index) => {
@@ -104,13 +92,29 @@ function processFileContents(fileContents: string[], filePaths: string[]): strin
 function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionContext) {
 	const nonce = getNonce();
 
+    // Additional CSS to ensure responsive constraint of elements to webview width
+    const responsiveStyles = `
+        html, body, #response { max-width: 100%; }
+        #response { word-wrap: break-word; }
+    `;
+
+    const cssEnhancements = `
+        #response {
+            display: none;
+            padding-top: 5px; /* Reduced from original padding */
+            padding-bottom: 5px; /* Reduced from original padding */
+            margin-top: 5px; /* Optional: Can be adjusted if needed */
+            margin-bottom: 5px; /* Optional: Can be adjusted if needed */
+        }
+    `;
+    
     // Dark theme specific styles
     const darkThemeStyles = `
         body { background: #1e1e1e; color: #c5c5c5; }
         textarea, #response { background: #252526; color: #CCC; border: 1px solid #3c3c3c; }
         button {
 			padding: 10px 20px;
-			margin-bottom: 20px;
+			margin-bottom: 10px;
 			border: none;
 			outline: none;
 			cursor: pointer;
@@ -133,29 +137,41 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
 		}
         #response { border-color: #3c3c3c; }
     `;
-
-	
-
+    
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Marvin GUI</title>
+        
         <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; }
-            textarea, #response { width: 100%; margin-bottom: 10px; }
+            textarea, #response {
+                width: calc(100% - 30px); /* Adjust width to account for margin */
+                margin-bottom: 5px;
+                padding: 10px;
+            }
             textarea { height: 100px; }
-            #response { white-space: pre-wrap; padding: 10px; }
-            button { padding: 5px 15px; margin-bottom: 20px; }
+            #response {
+                margin-top: 5px;
+                margin-bottom: 5px;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                overflow: auto;
+            }
+            button { padding: 5px 15px; margin-bottom: 10px; }
 
-            /* Inject dark theme styles */
+            /* Inject css styles */
             ${darkThemeStyles}
-
+            ${responsiveStyles}
+            ${cssEnhancements}
 			.loader {
 				border: 5px solid #f3f3f3; /* Light grey */
 				border-top: 5px solid #3498db; /* Blue */
 				border-radius: 50%;
+                margin-bottom: 10px;
+                margin-left: 10px;
 				width: 30px;
 				height: 30px;
 				animation: spin 2s linear infinite;
@@ -166,42 +182,57 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
 				0% { transform: rotate(0deg); }
 				100% { transform: rotate(360deg); }
 			}
+
+            .flex-container {
+                display: flex; // Use flexbox to position the elements side by side
+                align-items: center; // Vertically center the items in the flex container
+            }
         </style>
     </head>
     <body>
         <h1>Marvin Extension GUI</h1>
         <p>Use this panel to interact with the Marvin extension and ask questions about your project.</p>
         <textarea id="question" placeholder="Ask a question about the project..."></textarea>
-        <button onclick="askQuestion()" class="ask-btn">Ask</button>
-		<div id="loading" class="loader"></div>
+        
+        <!-- Flex container for the button and loader -->
+        <div class="flex-container">
+            <button onclick="askQuestion()" class="ask-btn">Ask</button>
+            <div id="loading" class="loader"></div>
+        </div>
+        
         <div id="response"></div>
 
         <script nonce="${nonce}">
             const vscode = acquireVsCodeApi();
+
             function askQuestion() {
-				const question = document.getElementById('question').value;
-				document.getElementById('loading').style.display = 'block'; // Show loading icon
-				document.getElementById('response').textContent = ''; // Clear the previous response or error
-				vscode.postMessage({
-					command: 'queryOpenAI',
-					text: question
-				});
-			}
+                const question = document.getElementById('question').value;
+                const responseContainer = document.getElementById('response');
+                responseContainer.style.display = 'none'; // Ensure it's hidden before displaying loading icon
+                document.getElementById('loading').style.display = 'block'; // Show loading icon
+                responseContainer.innerHTML = ''; // Clear the previous response or error
+                vscode.postMessage({
+                    command: 'queryOpenAI',
+                    text: question
+                });
+            }
 
             window.addEventListener('message', event => {
-				const message = event.data;
-				switch (message.command) {
-					case 'response':
-						const responseContainer = document.getElementById('response');
-						responseContainer.textContent = message.text;
-						document.getElementById('loading').style.display = 'none'; // Hide loading icon
-						break;
-					case 'error':
-						document.getElementById('response').textContent = 'Error: ' + message.text;
-						document.getElementById('loading').style.display = 'none'; // Hide loading icon
-						break;
-				}
-			});
+                const message = event.data;
+                const responseContainer = document.getElementById('response');
+                switch (message.command) {
+                    case 'response':
+                        responseContainer.innerHTML = message.html;
+                        responseContainer.style.display = 'block'; // Now display the response
+                        document.getElementById('loading').style.display = 'none'; // Hide loading icon
+                        break;
+                    case 'error':
+                        responseContainer.textContent = 'Error: ' + message.text;
+                        responseContainer.style.display = 'block'; // Display the error message
+                        document.getElementById('loading').style.display = 'none'; // Hide loading icon
+                        break;
+                }
+            });
         </script>
     </body>
     </html>`;
@@ -231,20 +262,4 @@ async function queryOpenAI(userQuery: string, projectData: string, openAIClient:
 
     const response = await openAIClient.getChatCompletion(messages);
     return response;
-}
-
-async function applyChangesToFile(changes: Array<{ filePath: string; content: string; }>): Promise<void> {
-    for (const change of changes) {
-        await writeToFile(change.filePath, change.content);
-    }
-}
-
-function parseFileChanges(response: string): Array<{ filePath: string; content: string; }> | null {
-    // This function should parse the response from OpenAI and extract
-    // instructions for file modifications, if there are any.
-    // For the purpose of this example, assume we have a function to do this.
-    // Return example - for illustration purposes only, not functional code:
-    return response.includes('change file') ? [
-        { filePath: '/path/to/file', content: 'new file content' }
-    ] : null;
 }
