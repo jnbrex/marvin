@@ -1,0 +1,64 @@
+{
+  "name": "marvin",
+  "displayName": "marvin",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": [
+      {
+        "type": "object",
+        "title": "Marvin Settings",
+        "properties": {
+          "marvin.openaiApiKey": {
+            "type": "string",
+            "default": "",
+            "description": "API Key for OpenAI"
+          },
+          "marvin.modelName": {
+            "type": "string",
+            "default": "gpt-4-1106-preview",
+            "description": "The model name to use for OpenAI completions"
+          }
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "marvin.showGui",
+        "title": "Show Gui"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.3",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.84.0",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "@vscode/test-electron": "^2.3.6",
+    "eslint": "^8.52.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "axios": "^1.6.1",
+    "marked": "^10.0.0"
+  }
+}
