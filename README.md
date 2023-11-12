@@ -27,7 +27,7 @@ Before using Marvin, you'll need an OpenAI API key. Here's how to set everything
 
 1. Navigate to the `Settings` panel in VS Code by clicking on the gear icon at the bottom left corner and selecting `Settings`.
 2. Search for "Marvin" in the settings search bar.
-3. Find the setting labeled `OpenAI Api Key`.
+3. Find the setting labeled `Openai Api Key`.
 4. Enter your OpenAI API key into this setting field.
 
 ### Usage

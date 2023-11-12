@@ -268,7 +268,7 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
         </style>
     </head>
     <body>
-        <h1>Marvin Code Assistant</h1>
+        <h1>Marvin - your code assistant</h1>
         <textarea id="question" placeholder="Ask a question about your project..."></textarea>
         
         <!-- Flex container for the button and loader -->
@@ -407,8 +407,8 @@ function getHistoryWebviewContent(history: { question: string, response: string,
                     }
                     .history-entry {
                         border-bottom: 1px solid #3c3c3c;
-                        padding-bottom: 20px;
-                        margin-bottom: 20px;
+                        padding-bottom: 10px;
+                        margin-bottom: 10px;
                     }
                     .question, .response {
                         padding: 10px;
