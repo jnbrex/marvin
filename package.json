@@ -33,15 +33,15 @@
     "commands": [
       {
         "command": "marvin.showGui",
-        "title": "Marvin"
+        "title": "Marvin: Code Assistant"
       },
       {
         "command": "marvin.showHistory",
-        "title": "Marvin History"
+        "title": "Marvin: Show History"
       },
       {
         "command": "marvin.clearHistory",
-        "title": "Marvin Clear History"
+        "title": "Marvin: Clear History"
       }
     ]
   },
