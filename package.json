@@ -33,7 +33,11 @@
     "commands": [
       {
         "command": "marvin.showGui",
-        "title": "Load Marvin"
+        "title": "Marvin"
+      },
+      {
+        "command": "marvin.showHistory",
+        "title": "Marvin History"
       }
     ]
   },
@@ -46,6 +50,7 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/axios": "^0.14.0",
     "@types/mocha": "^10.0.3",
     "@types/node": "18.x",
     "@types/vscode": "^1.84.0",
