@@ -1,71 +1,58 @@
-# marvin README
+# Marvin - Your Coding Assistant
 
-This is the README for your extension "marvin". After writing up a brief description, we recommend including the following sections.
+Marvin is a Visual Studio Code (VS Code) extension that acts as an intelligent coding assistant, leveraging OpenAI's powerful language models to help you understand and work within your software projects.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Code Analysis**: Marvin can analyze your codebase and provide insights, respond to specific coding queries, assist in debugging, and offer coding tips based on the full context of the project.
+- **Real-time Response**: Get responses to queries and summaries directly within VS Code as you work on your project.
+- **History Tracking**: Save and display the history of queries and responses for easy reference.
+- **History Management**: Retrieve past interactions with the assistant and clear the history if needed.
 
-For example if there is an image subfolder under your extension project workspace:
+## Getting Started
 
-\!\[feature X\]\(images/feature-x.png\)
+Before using Marvin, you'll need an OpenAI API key. Here's how to set everything up:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### Prerequisites
 
-## Requirements
+- Visual Studio Code (VS Code)
+- An active OpenAI account with access to the API (you can obtain an API key from [OpenAI](https://openai.com/))
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+### Installation
 
-## Extension Settings
+1. Download and install the Marvin extension from the Visual Studio Marketplace or build it from the source.
+2. After installing the Marvin extension, open your VS Code settings.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+### Set Up Your OpenAI API Key
 
-For example:
+1. Navigate to the `Settings` panel in VS Code by clicking on the gear icon at the bottom left corner and selecting `Settings`.
+2. Search for "Marvin" in the settings search bar.
+3. Find the setting labeled `OpenAI Api Key`.
+4. Enter your OpenAI API key into this setting field.
 
-This extension contributes the following settings:
+### Usage
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+To start using Marvin once everything is set up:
 
-## Known Issues
+1. Open a project in VS Code.
+2. Trigger Marvin's GUI by pressing `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS) to open the command palette and type `Marvin: Code Assistant`.
+3. A new pane called 'Marvin' will appear where you can type in your query.
+4. Marvin will analyze the context based on the current workspace and provide a response to your query.
+5. To view your query history, use the command `Marvin: Show History`.
+6. If you want to clear your query history, use the command `Marvin: Clear History`.
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Always ensure the project you're working on has its files saved and that the extension has the appropriate permissions to read the workspace files.
 
-## Release Notes
+## Security Note
 
-Users appreciate release notes as you update your extension.
+Please be cautious with the queries you make to Marvin and the information you share, especially when using proprietary or sensitive code.
 
-### 1.0.0
+## Contributing
 
-Initial release of ...
+Contributions to Marvin are welcome! Feel free to fork the repository, make changes, and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
-### 1.0.1
+## Support and Feedback
 
-Fixed issue #.
+If you encounter any issues or have suggestions, please create an issue in the project's GitHub repository.
 
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Enjoy coding with Marvin at your side!
