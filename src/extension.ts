@@ -268,7 +268,7 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
         </style>
     </head>
     <body>
-        <h1>Marvin - your coding assistant</h1>
+        <h1>Marvin Code Assistant</h1>
         <textarea id="question" placeholder="Ask a question about your project..."></textarea>
         
         <!-- Flex container for the button and loader -->
