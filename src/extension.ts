@@ -4,6 +4,7 @@ import { OpenAIClient } from './openaiClient';
 import marked from 'marked';
 import axios from 'axios';
 import { format } from 'date-fns';
+import * as path from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
     // Register a file watcher for all files in the workspace.
@@ -111,13 +112,16 @@ export function deactivate() {}
 
 function processFileContents(fileContents: string[], filePaths: string[]): string {
     const sourceCodeExtensions = ['.py', '.java', '.cpp', '.ts', '.html', '.css'];
+    const ignoredFileNames = ['package-lock.json', '.DS_Store', 'yarn.lock'];
+    
     let concatenatedSourceCode = '';
 
     fileContents.forEach((content, index) => {
         const filePath = filePaths[index];
-        const fileExtension = filePath.substring(filePath.lastIndexOf('.'));
+        const fileName = path.basename(filePath);
+        const fileExtension = path.extname(filePath);
 
-        if (sourceCodeExtensions.includes(fileExtension)) {
+        if (sourceCodeExtensions.includes(fileExtension) && !ignoredFileNames.includes(fileName)) {
             concatenatedSourceCode += `File: ${filePath}\n${content}\n\n`;
         }
     });
