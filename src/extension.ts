@@ -2,14 +2,15 @@ import * as vscode from 'vscode';
 import { FileReader } from './fileReader';
 import { OpenAIClient } from './openaiClient';
 import marked from 'marked';
-import axios, { Axios } from 'axios';
+import axios from 'axios';
+import { format } from 'date-fns';
 
 export function activate(context: vscode.ExtensionContext) {
     // Register a file watcher for all files in the workspace.
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
 
-    let history: { question: string; response: string }[] =
-        context.globalState.get<{ question: string; response: string }[]>('marvinHistory') || [];
+    let history: { question: string; response: string; summary?: string, timestamp?: string }[] =
+        context.globalState.get<{ question: string; response: string; summary?: string, timestamp?: string }[]>('marvinHistory') || [];
 
     const openAIClient = new OpenAIClient(
         vscode.workspace.getConfiguration('marvin').get('openaiApiKey') || '',
@@ -49,7 +50,8 @@ export function activate(context: vscode.ExtensionContext) {
                         try {
                             const cancellationTokenSource = openAIClient.createCancelTokenSource();
                             const response = await queryOpenAI(message.text, projectData, openAIClient, cancellationTokenSource);
-                            history.unshift({ question: message.text, response: response });
+                            const summary = await generateSummaryWithOpenAI(message.text, openAIClient);
+                            history.unshift({ question: message.text, response: response, summary: summary.text, timestamp: summary.timestamp });
                             history = history.slice(0, 50); // keep only the latest 50 entries
                             context.globalState.update('marvinHistory', history);
                             panel.webview.postMessage({ command: 'response', text: response, html: marked.parse(response) });
@@ -89,7 +91,20 @@ export function activate(context: vscode.ExtensionContext) {
         historyPanel.webview.html = getHistoryWebviewContent(history); // Removed the reverse operation
     });
 
-    context.subscriptions.push(historyDisposable, guiDisposable, fileWatcher);
+    const clearHistoryDisposable = vscode.commands.registerCommand('marvin.clearHistory', () => {
+        // Clear the history array
+        history = [];
+        // Update the global state
+        context.globalState.update('marvinHistory', history);
+        // Optionally, inform the user that history has been cleared
+        vscode.window.showInformationMessage('Marvin history cleared.');
+    });
+
+    context.subscriptions.push(
+        guiDisposable,
+        fileWatcher,
+        historyDisposable,
+        clearHistoryDisposable);
 }
 
 export function deactivate() {}
@@ -361,15 +376,16 @@ async function queryOpenAI(userQuery: string,
     }
 }
 
-function getHistoryWebviewContent(history: { question: string, response: string }[]) {
+function getHistoryWebviewContent(history: { question: string, response: string, summary?: string, timestamp?: string }[]) {
     let content = '';
     for (const [index, item] of history.entries()) {
-        const summary = summarizeQuestion(item.question);
         content += `
             <div class="history-entry">
-                <button class="summary-button">${summary}</button>
+                <button class="summary-button">${item.summary} (${item.timestamp})</button> 
                 <div id="entry-${index}" class="full-entry" style="display: none;">
-                    <div class="question">${marked.parse(item.question)}</div>
+                    <strong>Query:</strong>
+                    <div class="query">${marked.parse(item.question)}</div>
+                    <strong>Response:</strong>
                     <div class="response">${marked.parse(item.response)}</div>
                 </div>
             </div>`;
@@ -456,11 +472,25 @@ function getHistoryWebviewContent(history: { question: string, response: string 
         </html>`;
 }
 
-function summarizeQuestion(question: string): string {
-    const words = question.split(/\s+/);
-    if (words.length <= 10) {
-        return question;
-    } else {
-        return words.slice(0, 10).join(' ') + '...';
+async function generateSummaryWithOpenAI(
+    question: string,
+    openAIClient: OpenAIClient): Promise<{ text: string, timestamp: string }> {
+    const summaryPrompt = `Summarize the following query in 10 words or fewer. The response MUST be LESS THAN OR EQUAL TO 10 words in length. Query:`;
+    const messages = [
+        { role: "system", content: summaryPrompt },
+        { role: "user", content: question }
+    ];
+
+    try {
+        // Generate a cancellation token which can be used to cancel the request if needed.
+        const cancellationToken = openAIClient.createCancelTokenSource().token;
+        // Get a summary from the OpenAI model
+        const summary = await openAIClient.getChatCompletion(messages, cancellationToken);
+        // Add the timestamp to the return value
+        const timestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss'); // Format as per requirement
+        return { text: summary, timestamp };
+    } catch (error) {
+        console.error('Error generating summary with OpenAI:', error);
+        throw error;
     }
 }

@@ -38,6 +38,10 @@
       {
         "command": "marvin.showHistory",
         "title": "Marvin History"
+      },
+      {
+        "command": "marvin.clearHistory",
+        "title": "Marvin Clear History"
       }
     ]
   },
