@@ -111,7 +111,7 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 function processFileContents(fileContents: string[], filePaths: string[]): string {
-    const sourceCodeExtensions = ['.py', '.java', '.cpp', '.ts', '.html', '.css'];
+    const sourceCodeExtensions = ['.py', '.java', '.cpp', '.ts', '.html', '.css', '.conf', '.json'];
     const ignoredFileNames = ['package-lock.json', '.DS_Store', 'yarn.lock'];
     
     let concatenatedSourceCode = '';
